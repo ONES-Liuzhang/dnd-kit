@@ -1,5 +1,5 @@
-import type {UniqueIdentifier} from '../types';
-import type {DroppableContainer} from './types';
+import type { UniqueIdentifier } from '../types';
+import type { DroppableContainer } from './types';
 
 type Identifier = UniqueIdentifier | null | undefined;
 
@@ -16,9 +16,10 @@ export class DroppableContainersMap extends Map<
   }
 
   getEnabled(): DroppableContainer[] {
-    return this.toArray().filter(({disabled}) => !disabled);
+    return this.toArray().filter(({ disabled }) => !disabled);
   }
 
+  // 根据 id 获取 droppable
   getNodeFor(id: Identifier) {
     return this.get(id)?.node.current ?? undefined;
   }

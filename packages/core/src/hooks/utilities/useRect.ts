@@ -1,16 +1,22 @@
-import {useReducer} from 'react';
-import {useIsomorphicLayoutEffect} from '@dnd-kit/utilities';
+import { useReducer } from 'react';
+import { useIsomorphicLayoutEffect } from '@dnd-kit/utilities';
 
-import type {ClientRect} from '../../types';
-import {getClientRect, Rect} from '../../utilities';
+import type { ClientRect } from '../../types';
+import { getClientRect, Rect } from '../../utilities';
 
-import {useMutationObserver} from './useMutationObserver';
-import {useResizeObserver} from './useResizeObserver';
+import { useMutationObserver } from './useMutationObserver';
+import { useResizeObserver } from './useResizeObserver';
 
 function defaultMeasure(element: HTMLElement) {
   return new Rect(getClientRect(element), element);
 }
-
+/**
+ * 
+ * @param element 需要监听的元素，当前活跃的元素 activeNode
+ * @param measure 测量方法，用于计算 transform 等样式
+ * @param fallbackRect 
+ * @returns 
+ */
 export function useRect(
   element: HTMLElement | null,
   measure: (element: HTMLElement) => ClientRect = defaultMeasure,
@@ -25,7 +31,7 @@ export function useRect(
       }
 
       for (const record of records) {
-        const {type, target} = record;
+        const { type, target } = record;
 
         if (
           type === 'childList' &&
@@ -38,7 +44,7 @@ export function useRect(
       }
     },
   });
-  const resizeObserver = useResizeObserver({callback: measureRect});
+  const resizeObserver = useResizeObserver({ callback: measureRect });
 
   useIsomorphicLayoutEffect(() => {
     measureRect();

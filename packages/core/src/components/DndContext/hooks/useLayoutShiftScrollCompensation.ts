@@ -1,19 +1,26 @@
-import {useRef} from 'react';
-import {useIsomorphicLayoutEffect} from '@dnd-kit/utilities';
+import { useRef } from 'react';
+import { useIsomorphicLayoutEffect } from '@dnd-kit/utilities';
 
-import {getRectDelta} from '../../../utilities/rect';
-import {getFirstScrollableAncestor} from '../../../utilities/scroll';
-import type {ClientRect} from '../../../types';
-import type {DraggableNode} from '../../../store';
-import type {MeasuringFunction} from '../types';
+import { getRectDelta } from '../../../utilities/rect';
+import { getFirstScrollableAncestor } from '../../../utilities/scroll';
+import type { ClientRect } from '../../../types';
+import type { DraggableNode } from '../../../store';
+import type { MeasuringFunction } from '../types';
 
 interface Options {
   activeNode: DraggableNode | null | undefined;
-  config: boolean | {x: boolean; y: boolean} | undefined;
+  config: boolean | { x: boolean; y: boolean } | undefined;
   initialRect: ClientRect | null;
   measure: MeasuringFunction;
 }
 
+/**
+ * 在什么情况下需要调整偏移量？
+ * @param activeNode 当前正在拖拽的元素
+ * @param measure measureConfig.draggable.measure
+ * @param initialRect activeNode 的初始坐标
+ * @param config autoScrollOptions.layoutShiftCompensation
+ */
 export function useLayoutShiftScrollCompensation({
   activeNode,
   measure,
@@ -21,7 +28,7 @@ export function useLayoutShiftScrollCompensation({
   config = true,
 }: Options) {
   const initialized = useRef(false);
-  const {x, y} = typeof config === 'boolean' ? {x: config, y: config} : config;
+  const { x, y } = typeof config === 'boolean' ? { x: config, y: config } : config;
 
   useIsomorphicLayoutEffect(() => {
     const disabled = !x && !y;
@@ -47,6 +54,7 @@ export function useLayoutShiftScrollCompensation({
     }
 
     const rect = measure(node);
+    // 计算增量（偏移量）
     const rectDelta = getRectDelta(rect, initialRect);
 
     if (!x) {
@@ -61,6 +69,7 @@ export function useLayoutShiftScrollCompensation({
     initialized.current = true;
 
     if (Math.abs(rectDelta.x) > 0 || Math.abs(rectDelta.y) > 0) {
+      // 获取最近的滚动祖先
       const firstScrollableAncestor = getFirstScrollableAncestor(node);
 
       if (firstScrollableAncestor) {

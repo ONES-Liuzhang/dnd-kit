@@ -1,4 +1,4 @@
-import {createContext, useContext, useMemo} from 'react';
+import { createContext, useContext, useMemo } from 'react';
 import {
   Transform,
   useNodeRef,
@@ -7,10 +7,10 @@ import {
   useUniqueId,
 } from '@dnd-kit/utilities';
 
-import {InternalContext, Data} from '../store';
-import type {UniqueIdentifier} from '../types';
-import {ActiveDraggableContext} from '../components/DndContext';
-import {useSyntheticListeners, SyntheticListenerMap} from './utilities';
+import { InternalContext, Data } from '../store';
+import type { UniqueIdentifier } from '../types';
+import { ActiveDraggableContext } from '../components/DndContext';
+import { useSyntheticListeners, SyntheticListenerMap } from './utilities';
 
 export interface UseDraggableArguments {
   id: UniqueIdentifier;
@@ -67,12 +67,15 @@ export function useDraggable({
   );
   const [node, setNodeRef] = useNodeRef();
   const [activatorNode, setActivatorNodeRef] = useNodeRef();
+  // > activators 转换成真实事件
   const listeners = useSyntheticListeners(activators, id);
   const dataRef = useLatestValue(data);
 
+  // useLayoutEffect || useEffect
   useIsomorphicLayoutEffect(
     () => {
-      draggableNodes.set(id, {id, key, node, activatorNode, data: dataRef});
+      // 将 Node 存储到 map 中
+      draggableNodes.set(id, { id, key, node, activatorNode, data: dataRef });
 
       return () => {
         const node = draggableNodes.get(id);

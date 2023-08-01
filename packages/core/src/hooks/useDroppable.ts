@@ -116,6 +116,7 @@ export function useDroppable({
     resizeObserver.observe(nodeRef.current);
   }, [nodeRef, resizeObserver]);
 
+  // 注册 droppableContainer
   useIsomorphicLayoutEffect(
     () => {
       dispatch({

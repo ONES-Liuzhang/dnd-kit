@@ -24,5 +24,9 @@ function createAdjustmentFn(modifier: number) {
   };
 }
 
+/**
+ * @param object 目标对象
+ * @param ...adjustments 调整对象
+ */
 export const add = createAdjustmentFn(1);
 export const subtract = createAdjustmentFn(-1);

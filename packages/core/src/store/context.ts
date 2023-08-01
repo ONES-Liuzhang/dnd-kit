@@ -1,10 +1,11 @@
-import {createContext} from 'react';
+import { createContext } from 'react';
 
-import {noop} from '../utilities/other';
-import {defaultMeasuringConfiguration} from '../components/DndContext/defaults';
-import {DroppableContainersMap} from './constructors';
-import type {InternalContextDescriptor, PublicContextDescriptor} from './types';
+import { noop } from '../utilities/other';
+import { defaultMeasuringConfiguration } from '../components/DndContext/defaults';
+import { DroppableContainersMap } from './constructors';
+import type { InternalContextDescriptor, PublicContextDescriptor } from './types';
 
+// Internal 有啥不同？可以暴露给外部？
 export const defaultPublicContext: PublicContextDescriptor = {
   activatorEvent: null,
   active: null,
@@ -31,6 +32,7 @@ export const defaultPublicContext: PublicContextDescriptor = {
   measuringScheduled: false,
 };
 
+// 内部状态树
 export const defaultInternalContext: InternalContextDescriptor = {
   activatorEvent: null,
   activators: [],

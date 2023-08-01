@@ -8,7 +8,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {unstable_batchedUpdates} from 'react-dom';
+import { unstable_batchedUpdates } from 'react-dom';
 import {
   add,
   getEventCoordinates,
@@ -17,7 +17,7 @@ import {
   useIsomorphicLayoutEffect,
   useUniqueId,
 } from '@dnd-kit/utilities';
-import type {Transform} from '@dnd-kit/utilities';
+import type { Transform } from '@dnd-kit/utilities';
 
 import {
   Action,
@@ -28,7 +28,7 @@ import {
   getInitialState,
   reducer,
 } from '../../store';
-import {DndMonitorContext, useDndMonitorProvider} from '../DndMonitor';
+import { DndMonitorContext, useDndMonitorProvider } from '../DndMonitor';
 import {
   useAutoScroller,
   useCachedNode,
@@ -45,7 +45,7 @@ import {
   useSensorSetup,
   useWindowRect,
 } from '../../hooks/utilities';
-import type {AutoScrollOptions, SyntheticListener} from '../../hooks/utilities';
+import type { AutoScrollOptions, SyntheticListener } from '../../hooks/utilities';
 import type {
   Sensor,
   SensorContext,
@@ -61,8 +61,8 @@ import {
   getFirstCollision,
   rectIntersection,
 } from '../../utilities';
-import {applyModifiers, Modifiers} from '../../modifiers';
-import type {Active, Over} from '../../store/types';
+import { applyModifiers, Modifiers } from '../../modifiers';
+import type { Active, Over } from '../../store/types';
 import type {
   DragStartEvent,
   DragCancelEvent,
@@ -78,12 +78,12 @@ import {
   ScreenReaderInstructions,
 } from '../Accessibility';
 
-import {defaultData, defaultSensors} from './defaults';
+import { defaultData, defaultSensors } from './defaults';
 import {
   useLayoutShiftScrollCompensation,
   useMeasuringConfiguration,
 } from './hooks';
-import type {MeasuringConfiguration} from './types';
+import type { MeasuringConfiguration } from './types';
 
 export interface Props {
   id?: string;
@@ -107,7 +107,7 @@ export interface Props {
   onDragCancel?(event: DragCancelEvent): void;
 }
 
-export interface CancelDropArguments extends DragEndEvent {}
+export interface CancelDropArguments extends DragEndEvent { }
 
 export type CancelDrop = (
   args: CancelDropArguments
@@ -149,8 +149,8 @@ export const DndContext = memo(function DndContext({
   const [status, setStatus] = useState<Status>(Status.Uninitialized);
   const isInitialized = status === Status.Initialized;
   const {
-    draggable: {active: activeId, nodes: draggableNodes, translate},
-    droppable: {containers: droppableContainers},
+    draggable: { active: activeId, nodes: draggableNodes, translate },
+    droppable: { containers: droppableContainers },
   } = state;
   const node = activeId ? draggableNodes.get(activeId) : null;
   const activeRects = useRef<Active['rect']['current']>({
@@ -161,41 +161,53 @@ export const DndContext = memo(function DndContext({
     () =>
       activeId != null
         ? {
-            id: activeId,
-            // It's possible for the active node to unmount while dragging
-            data: node?.data ?? defaultData,
-            rect: activeRects,
-          }
+          id: activeId,
+          // It's possible for the active node to unmount while dragging
+          data: node?.data ?? defaultData,
+          rect: activeRects,
+        }
         : null,
     [activeId, node]
   );
   const activeRef = useRef<UniqueIdentifier | null>(null);
+  // 不同的传感器需要切换吗？
   const [activeSensor, setActiveSensor] = useState<SensorInstance | null>(null);
   const [activatorEvent, setActivatorEvent] = useState<Event | null>(null);
+
   const latestProps = useLatestValue(props, Object.values(props));
   const draggableDescribedById = useUniqueId(`DndDescribedBy`, id);
+  // 筛选掉不可用的 -> filter((item) => !item)
   const enabledDroppableContainers = useMemo(
     () => droppableContainers.getEnabled(),
     [droppableContainers]
   );
   const measuringConfiguration = useMeasuringConfiguration(measuring);
-  const {droppableRects, measureDroppableContainers, measuringScheduled} =
+  // droppableRects: map => { [uniqId]: rect }
+  // measureDroppableContainers: (ids) => void : 计算合法的 Droppable
+  const { droppableRects, measureDroppableContainers, measuringScheduled } =
     useDroppableMeasuring(enabledDroppableContainers, {
       dragging: isInitialized,
       dependencies: [translate.x, translate.y],
       config: measuringConfiguration.droppable,
     });
+  // 🌟【支持虚拟列表中滚动】拖拽时会对当前节点进行缓存，就算节点被卸载，也会保留引用
   const activeNode = useCachedNode(draggableNodes, activeId);
+  // TODO activatorEvent 啥时候初始化？
   const activationCoordinates = useMemo(
     () => (activatorEvent ? getEventCoordinates(activatorEvent) : null),
     [activatorEvent]
   );
   const autoScrollOptions = getAutoScrollerOptions();
+
+  // draggbleMeasure(activeNode) -> activeNode.getBoundingClientRect() 
+  // 初始化时为 null
+  // 拖拽开始时 activeNode -> initialActiveNodeRect
   const initialActiveNodeRect = useInitialRect(
     activeNode,
     measuringConfiguration.draggable.measure
   );
 
+  // TODO 调整偏移量
   useLayoutShiftScrollCompensation({
     activeNode: activeId ? draggableNodes.get(activeId) : null,
     config: autoScrollOptions.layoutShiftCompensation,
@@ -203,6 +215,7 @@ export const DndContext = memo(function DndContext({
     measure: measuringConfiguration.draggable.measure,
   });
 
+  // 计算 transform
   const activeNodeRect = useRect(
     activeNode,
     measuringConfiguration.draggable.measure,
@@ -215,9 +228,9 @@ export const DndContext = memo(function DndContext({
     activatorEvent: null,
     active: null,
     activeNode,
-    collisionRect: null,
+    collisionRect: null, // 冲突方向
     collisions: null,
-    droppableRects,
+    droppableRects, // useDroppable 收集的所有节点的位置坐标
     draggableNodes,
     draggingNode: null,
     draggingNodeRect: null,
@@ -226,6 +239,7 @@ export const DndContext = memo(function DndContext({
     scrollableAncestors: [],
     scrollAdjustedTranslate: null,
   });
+  // 获取当前被放置的容器（支持 multiply draggable）
   const overNode = droppableContainers.getNodeFor(
     sensorContext.current.over?.id
   );
@@ -234,15 +248,18 @@ export const DndContext = memo(function DndContext({
   });
 
   // Use the rect of the drag overlay if it is mounted
+  // 判断是使用 DragOverlay 还是 activeNode
   const draggingNode = dragOverlay.nodeRef.current ?? activeNode;
   const draggingNodeRect = isInitialized
     ? dragOverlay.rect ?? activeNodeRect
     : null;
+  // 是否使用了 DragOverlay
   const usesDragOverlay = Boolean(
     dragOverlay.nodeRef.current && dragOverlay.rect
   );
   // The delta between the previous and new position of the draggable node
   // is only relevant when there is no drag overlay
+  // 只有没使用 dragOverlay 的时候，才需要计算偏移量
   const nodeRectDelta = useRectDelta(usesDragOverlay ? null : activeNodeRect);
 
   // Get the window rect of the dragging node
@@ -251,12 +268,15 @@ export const DndContext = memo(function DndContext({
   );
 
   // Get scrollable ancestors of the dragging node
+  // 获取滚动容器
   const scrollableAncestors = useScrollableAncestors(
     isInitialized ? overNode ?? activeNode : null
   );
+  // 滚动容器尺寸
   const scrollableAncestorRects = useRects(scrollableAncestors);
 
   // Apply modifiers
+  // translate: store.state.draggable.translate 状态树中存储的拖拽元素坐标
   const modifiedTranslate = applyModifiers(modifiers, {
     transform: {
       x: translate.x - nodeRectDelta.x,
@@ -276,6 +296,7 @@ export const DndContext = memo(function DndContext({
     windowRect,
   });
 
+  // add: value + valueAdjustment，把调整对象中每一项累加到目标对象的对应项中
   const pointerCoordinates = activationCoordinates
     ? add(activationCoordinates, translate)
     : null;
@@ -290,6 +311,8 @@ export const DndContext = memo(function DndContext({
 
   const scrollAdjustedTranslate = add(modifiedTranslate, scrollAdjustment);
 
+  // 碰撞计算
+  // 通过碰撞计算，可以算出当前的 over node
   const collisionRect = draggingNodeRect
     ? getAdjustedRect(draggingNodeRect, modifiedTranslate)
     : null;
@@ -297,12 +320,12 @@ export const DndContext = memo(function DndContext({
   const collisions =
     active && collisionRect
       ? collisionDetection({
-          active,
-          collisionRect,
-          droppableRects,
-          droppableContainers: enabledDroppableContainers,
-          pointerCoordinates,
-        })
+        active,
+        collisionRect,
+        droppableRects,
+        droppableContainers: enabledDroppableContainers,
+        pointerCoordinates,
+      })
       : null;
   const overId = getFirstCollision(collisions, 'id');
   const [over, setOver] = useState<Over | null>(null);
@@ -322,12 +345,13 @@ export const DndContext = memo(function DndContext({
   const instantiateSensor = useCallback(
     (
       event: React.SyntheticEvent,
-      {sensor: Sensor, options}: SensorDescriptor<any>
+      { sensor: Sensor, options }: SensorDescriptor<any>
     ) => {
       if (activeRef.current == null) {
         return;
       }
 
+      // draggableNodes -> 调用 useDraggable 时会收集所有 draggableNodes
       const activeNode = draggableNodes.get(activeRef.current);
 
       if (!activeNode) {
@@ -336,6 +360,7 @@ export const DndContext = memo(function DndContext({
 
       const activatorEvent = event.nativeEvent;
 
+      // 鼠标传感器实例
       const sensorInstance = new Sensor({
         active: activeRef.current,
         activeNode,
@@ -357,9 +382,9 @@ export const DndContext = memo(function DndContext({
             return;
           }
 
-          const {onDragStart} = latestProps.current;
+          const { onDragStart } = latestProps.current;
           const event: DragStartEvent = {
-            active: {id, data: draggableNode.data, rect: activeRects},
+            active: { id, data: draggableNode.data, rect: activeRects },
           };
 
           unstable_batchedUpdates(() => {
@@ -370,7 +395,7 @@ export const DndContext = memo(function DndContext({
               initialCoordinates,
               active: id,
             });
-            dispatchMonitorEvent({type: 'onDragStart', event});
+            dispatchMonitorEvent({ type: 'onDragStart', event });
           });
         },
         onMove(coordinates) {
@@ -384,18 +409,19 @@ export const DndContext = memo(function DndContext({
       });
 
       unstable_batchedUpdates(() => {
+        // 设置当前传感器示例
         setActiveSensor(sensorInstance);
         setActivatorEvent(event.nativeEvent);
       });
 
       function createHandler(type: Action.DragEnd | Action.DragCancel) {
         return async function handler() {
-          const {active, collisions, over, scrollAdjustedTranslate} =
+          const { active, collisions, over, scrollAdjustedTranslate } =
             sensorContext.current;
           let event: DragEndEvent | null = null;
 
           if (active && scrollAdjustedTranslate) {
-            const {cancelDrop} = latestProps.current;
+            const { cancelDrop } = latestProps.current;
 
             event = {
               activatorEvent,
@@ -417,7 +443,7 @@ export const DndContext = memo(function DndContext({
           activeRef.current = null;
 
           unstable_batchedUpdates(() => {
-            dispatch({type});
+            dispatch({ type });
             setStatus(Status.Uninitialized);
             setOver(null);
             setActiveSensor(null);
@@ -430,7 +456,7 @@ export const DndContext = memo(function DndContext({
               const handler = latestProps.current[eventName];
 
               handler?.(event);
-              dispatchMonitorEvent({type: eventName, event});
+              dispatchMonitorEvent({ type: eventName, event });
             }
           });
         };
@@ -440,11 +466,14 @@ export const DndContext = memo(function DndContext({
     [draggableNodes]
   );
 
+  // 把 Sensor.handler
   const bindActivatorToSensorInstantiator = useCallback(
     (
       handler: SensorActivatorFunction<any>,
       sensor: SensorDescriptor<any>
     ): SyntheticListener['handler'] => {
+      // event => React 合成事件
+      // active => activeID 当前元素 id => 调用方自己配的 useDraggable({ id })
       return (event, active) => {
         const nativeEvent = event.nativeEvent as DndEvent;
         const activeDraggableNode = draggableNodes.get(active);
@@ -483,6 +512,7 @@ export const DndContext = memo(function DndContext({
     [draggableNodes, instantiateSensor]
   );
 
+  // 使用 bindActivatorToSensorInstantiator 对 sensors handler 做一层格式化
   const activators = useCombineActivators(
     sensors,
     bindActivatorToSensorInstantiator
@@ -498,8 +528,8 @@ export const DndContext = memo(function DndContext({
 
   useEffect(
     () => {
-      const {onDragMove} = latestProps.current;
-      const {active, activatorEvent, collisions, over} = sensorContext.current;
+      const { onDragMove } = latestProps.current;
+      const { active, activatorEvent, collisions, over } = sensorContext.current;
 
       if (!active || !activatorEvent) {
         return;
@@ -518,7 +548,7 @@ export const DndContext = memo(function DndContext({
 
       unstable_batchedUpdates(() => {
         onDragMove?.(event);
-        dispatchMonitorEvent({type: 'onDragMove', event});
+        dispatchMonitorEvent({ type: 'onDragMove', event });
       });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -544,16 +574,16 @@ export const DndContext = memo(function DndContext({
         return;
       }
 
-      const {onDragOver} = latestProps.current;
+      const { onDragOver } = latestProps.current;
       const overContainer = droppableContainers.get(overId);
       const over =
         overContainer && overContainer.rect.current
           ? {
-              id: overContainer.id,
-              rect: overContainer.rect.current,
-              data: overContainer.data,
-              disabled: overContainer.disabled,
-            }
+            id: overContainer.id,
+            rect: overContainer.rect.current,
+            data: overContainer.data,
+            disabled: overContainer.disabled,
+          }
           : null;
       const event: DragOverEvent = {
         active,
@@ -569,7 +599,7 @@ export const DndContext = memo(function DndContext({
       unstable_batchedUpdates(() => {
         setOver(over);
         onDragOver?.(event);
-        dispatchMonitorEvent({type: 'onDragOver', event});
+        dispatchMonitorEvent({ type: 'onDragOver', event });
       });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -621,6 +651,7 @@ export const DndContext = memo(function DndContext({
     scrollableAncestorRects,
   });
 
+  // 暴露给外部的 state
   const publicContext = useMemo(() => {
     const context: PublicContextDescriptor = {
       active,
@@ -727,6 +758,6 @@ export const DndContext = memo(function DndContext({
       };
     }
 
-    return {enabled};
+    return { enabled };
   }
 });

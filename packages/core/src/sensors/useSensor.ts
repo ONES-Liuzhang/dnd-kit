@@ -1,7 +1,8 @@
-import {useMemo} from 'react';
+import { useMemo } from 'react';
 
-import type {Sensor, SensorDescriptor, SensorOptions} from './types';
+import type { Sensor, SensorDescriptor, SensorOptions } from './types';
 
+// useSensor => { sensor: { eventName: 'onXXX', handler: () => void }, options }
 export function useSensor<T extends SensorOptions>(
   sensor: Sensor<T>,
   options?: T
